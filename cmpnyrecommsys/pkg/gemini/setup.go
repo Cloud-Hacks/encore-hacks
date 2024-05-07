@@ -51,7 +51,7 @@ func GetRecommendation(msg string, category config.RecommendationTypes) []Recomm
 		},
 	}
 
-	resp, err := cs.SendMessage(ctx, genai.Text("My company choice is Harness Org"))
+	resp, err := cs.SendMessage(ctx, genai.Text(msg))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -74,30 +74,25 @@ func GetRecommendation(msg string, category config.RecommendationTypes) []Recomm
 	return recommendations
 }
 
-/* type BaselineRiskResponse struct {
+type BaselineRiskResponse struct {
 	BaselineRisk float64 `json:"baseline_risk"`
 }
 
 func GetBaselineRisk(age uint, industry string) BaselineRiskResponse {
-	client := openai.NewClient(os.Getenv("CHATGPT_API_KEY"))
+	ctx := context.Background()
+	// Access your API key as an environment variable (see "Set up your API key" above)
+	client, err := genai.NewClient(ctx, option.WithAPIKey("AIzaSyBM221b9rNbUmpIOIKAOb9xhhyv0dGnMs0"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer client.Close()
 
-	resp, err := client.CreateChatCompletion(
-		context.Background(),
-		openai.ChatCompletionRequest{
-			Model: openai.GPT3Dot5Turbo,
-			Messages: []openai.ChatCompletionMessage{
-				{
-					Role:    openai.ChatMessageRoleSystem,
-					Content: "You are a risk assessor assistant API that returns JSON ONLY. I am going to give you a company's age and industry and you need to provide me a float baseline risk factor on a 0.1 - 1.9 scale with 2 being the riskiest. Return a JSON with the key: 'baseline_risk'. Return JSON only.",
-				},
-				{
-					Role:    openai.ChatMessageRoleUser,
-					Content: fmt.Sprintf("Age: %d, Industry: %s", age, industry),
-				},
-			},
-		},
-	)
-
+	// For text-only input, use the gemini-pro model
+	model := client.GenerativeModel("gemini-pro")
+	// Initialize the chat
+	cs := model.StartChat()
+	resp, err := cs.SendMessage(ctx, genai.Text("You are a risk assessor assistant API that returns JSON ONLY. I am going to give you a company's age and industry and you need to provide me a float baseline risk factor on a 0.1 - 1.9 scale with 2 being the riskiest. Return a JSON with the key: 'baseline_risk'. Return JSON only."),
+		genai.Text(fmt.Sprintf("Age: %d, Industry: %s", age, industry)))
 	if err != nil {
 		fmt.Printf("ChatCompletion error: %v\n", err)
 		return BaselineRiskResponse{
@@ -105,7 +100,7 @@ func GetBaselineRisk(age uint, industry string) BaselineRiskResponse {
 		}
 	}
 
-	response := resp.Choices[0].Message.Content
+	response := resp.Candidates[0].Content.Parts[0].(genai.Text)
 	fmt.Println(response)
 	var baselineRisk BaselineRiskResponse
 	err = json.Unmarshal([]byte(response), &baselineRisk)
@@ -133,7 +128,7 @@ type RiskResponseThree struct {
 	RiskWeights []RiskResponse `json:"risk_factors"`
 }
 
-func GetRiskWeights(age uint, industry string) []RiskResponse {
+/* func GetRiskWeights(age uint, industry string) []RiskResponse {
 	client := openai.NewClient(os.Getenv("CHATGPT_API_KEY"))
 
 	riskFactors := ""
