@@ -1,4 +1,4 @@
-package gpt
+package gemini
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/Raajheer1/hackutd-x/m/v2/pkg/config"
+	"github.com/afzal442/encore-hacks/pkg/config"
 	"github.com/google/generative-ai-go/genai"
 	"google.golang.org/api/option"
 )
