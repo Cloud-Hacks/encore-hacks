@@ -3,25 +3,24 @@ package main
 import (
 	"fmt"
 	"log"
-	"sync"
 
-	"github.com/afzal442/encore-hacks/pkg/config"
-	"github.com/joho/godotenv"
+	"github.com/afzal442/encore-hacks/models"
 )
 
-type container struct {
+/* type container struct {
 	mu   sync.Mutex
 	recs []config.Recommendation
-}
+} */
 
 func main() {
-	err := godotenv.Load(".env")
+	/* err := godotenv.Load(".env")
 	if err != nil {
 		log.Fatal("Error loading .env file")
-	}
+	} */
 	fmt.Println("Im online...")
+	// database.ConnectDatabase(database.Config())
 
-	config.Active = config.ActiveConfig{
+	/* config.Active = config.ActiveConfig{
 		//company that is going middle-of-the-road well
 		CompanyName:        "Bob's Electrician Shop",
 		Industry:           "Electrician",
@@ -70,7 +69,7 @@ func main() {
 		OperatingExpense:   float64(200000),
 		RetainedEarnings:   float64(100000),
 		YearsInBusiness:    uint(7),
-	}
+	} */
 
 	//prompt := fmt.Sprintf("Company: %s, Industry: %s, City: %s", config.Active.CompanyName, config.Active.Industry, config.Active.City)
 	//
@@ -110,12 +109,28 @@ func main() {
 	//	fmt.Println("----")
 	//}
 
-	/*
-		 	resp := gemini.GetRiskWeights(config.Active.YearsInBusiness, config.Active.Industry)
+	/* 	err = models.Migrate()
+	   	if err != nil {
+	   		log.Fatalf("Migration failed: %v", err)
+	   	} */
+	mv := models.Company{}
+	mv.Name = "Bob's Electrician Shop"
+	mv.Industry = "Electrician"
+	mv.City = "Dallas"
+	err := models.AddCompanies(&mv)
+	if err != nil {
+		log.Fatal(err)
+	}
+	cmp, err := models.GetCompanies()
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(cmp)
+	/* 	resp := gemini.GetRiskWeights(config.Active.YearsInBusiness, config.Active.Industry)
 
-			for _, res := range resp {
-				fmt.Println(res.RiskFactor)
-				fmt.Println(res.RiskWeight)
-			}
-	*/
+	   	for _, res := range resp {
+	   		fmt.Println(res.RiskFactor)
+	   		fmt.Println(res.RiskWeight)
+	   	} */
+
 }

@@ -8,10 +8,10 @@ import (
 )
 
 type Company struct {
-	ID       uint   `json:"id" gorm:"primaryKey,autoIncrement" example:"0"`
-	Name     string `json:"name" gorm:"not null" example:"Adomate"`
-	Industry string `json:"industry" gorm:"not null" example:"Technology"`
-	City     string `json:"city" gorm:"not null" example:"Dallas"`
+	ID       int   `json:"id"`
+	Name     string `json:"name"`
+	Industry string `json:"industry"`
+	City     string `json:"city"`
 
 	CreatedAt time.Time `json:"createdAt" example:"2024-01-01T00:00:00Z"`
 	UpdatedAt time.Time `json:"updatedAt" example:"2024-01-01T00:00:00Z"`
@@ -48,25 +48,36 @@ func (c *Company) Delete() error {
 	return database.DB.Delete(&c).Error
 } */
 
-// Define a database named 'url', using the database
+// Define a database named 'mydb', using the database
 // migrations  in the "./migrations" folder.
 // Encore provisions, migrates, and connects to the database.
 // Learn more: https://encore.dev/docs/primitives/databases
-var db = sqldb.NewDatabase("url", sqldb.DatabaseConfig{
-	Migrations: "../migrations",
+var db = sqldb.NewDatabase("mydb", sqldb.DatabaseConfig{
+	Migrations: "./migrations",
 })
 
-func AddCompanies(cmp *Company) error {
-	_, err := db.Exec(context.Background(), `
+func AddCompanies(ctx context.Context, cmp *Company) error {
+	_, err := db.Exec(ctx, `
 		INSERT INTO companies (name, industry, city)
 		VALUES ($1, $2, $3)
 	`, cmp.Name, cmp.Industry, cmp.City)
 	return err
 }
 
-func GetCompanies() ([]Company, error) {
-	err := sqldb.QueryRow(context.Background(),
+func GetCompanies(ctx context.Context) (*Company, error) {
+	cmp := &Company{}
+	err := db.QueryRow(ctx,
 		`SELECT * FROM companies`,
-	).Scan(&Company{})
-	return []Company{}, err
+	).Scan(&cmp.ID, &cmp.Name, &cmp.Industry, &cmp.City, &cmp.CreatedAt, &cmp.UpdatedAt)
+	return cmp, err
+}
+
+//encore:api public method=GET path=/companies
+func GetCompaniesHandler(ctx context.Context) (*Company, error) {
+	return GetCompanies(ctx)
+}
+
+//encore:api public method=POST path=/companies
+func AddCompaniesHandler(ctx context.Context, cmp *Company) error {
+	return AddCompanies(ctx, cmp)
 }
