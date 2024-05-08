@@ -20,15 +20,29 @@ var Recs []Recommendation = []Recommendation{
 	},
 }
 
-type RecommendationTypes string
+type RecommendationTypes struct {
+	Type string `json:"type"`
+}
 
 var RecTypes []RecommendationTypes = []RecommendationTypes{
-	"Safety",
-	"Accident History",
-	"Finance",
-	"Employee Training",
-	"Legal",
-	"Tax",
+	{
+		Type: "Safety",
+	},
+	{
+		Type: "Accident History",
+	},
+	{
+		Type: "Finance",
+	},
+	{
+		Type: "Employee Training",
+	},
+	{
+		Type: "Legal",
+	},
+	{
+		Type: "Tax",
+	},
 }
 
 var RiskFactorScores map[string]float64 = map[string]float64{

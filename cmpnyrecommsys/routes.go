@@ -1,60 +1,48 @@
-package ipad
+package comprecsys
 
 import (
+	"context"
 	"fmt"
-	"net/http"
 	"sync"
 
 	"github.com/afzal442/encore-hacks/pkg/config"
 	"github.com/afzal442/encore-hacks/pkg/data"
-	"github.com/afzal442/encore-hacks/pkg/database/models"
-	"github.com/afzal442/encore-hacks/pkg/echo/dto"
+	"github.com/afzal442/encore-hacks/pkg/dto"
 	"github.com/afzal442/encore-hacks/pkg/gemini"
 	"github.com/google/generative-ai-go/genai"
-	"github.com/labstack/echo/v4"
 )
 
 type Config struct {
-	CompanyName string          `json:"companyName"`
-	Industry    string          `json:"industry"`
-	City        string          `json:"city"`
-	Presets     []models.Preset `json:"presets"`
+	CompanyName string   `json:"companyName"`
+	Industry    string   `json:"industry"`
+	City        string   `json:"city"`
+	Presets     []Preset `json:"presets"`
 }
 
-// For the iPad show all the configs
-// getConfigs godoc
-// @Summary Get all configs
-// @Tags iPad
-// @Accept json
-// @Produce json
-// @Success 200 {object} []models.Preset
-// @Failure 400 {object} dto.ErrorResponse
-// @Failure 500 {object} dto.ErrorResponse
-// @Router /configs [get]
-func getConfigs(c echo.Context) error {
-	return c.JSON(http.StatusOK, config.Configs)
+type getConfigsResponse struct {
+	Configs []config.ActiveConfig `json:"configs"`
 }
 
-// From the iPad sets the current company with values
+//encore:api public method=GET path=/configs
+func getConfigs(ctx context.Context) (*getConfigsResponse, error) {
+	return &getConfigsResponse{
+		Configs: []config.ActiveConfig{
+			config.Active,
+		},
+	}, nil
+}
 
 type container struct {
-	mu   sync.Mutex
 	recs []config.Recommendation
+	mu   sync.Mutex
 }
 
-var Loading bool = false
+var Loading = false
 
-func setActiveConfig(c echo.Context) error {
-	var req config.ActiveConfig
-	if err := c.Bind(&req); err != nil {
-		return c.JSON(http.StatusBadRequest, dto.ErrorResponse{
-			Error: err.Error(),
-		})
-	}
+//encore:api public method=POST path=/set-config
+func setActiveConfig(ctx context.Context, req *config.ActiveConfig) (dto.MessageResponse, error) {
 
-	Loading = true
-
-	config.Active = req
+	config.Active = *req
 
 	prompt := fmt.Sprintf("Company: %s, Industry: %s, City: %s", config.Active.CompanyName, config.Active.Industry, config.Active.City)
 
@@ -76,7 +64,7 @@ func setActiveConfig(c echo.Context) error {
 					Title:     r.Title,
 					Summary:   r.Summary,
 					Details:   r.Details,
-					Type:      string(rec),
+					Type:      rec.Type,
 					Weight:    r.Weight,
 					Completed: false,
 				})
@@ -92,9 +80,9 @@ func setActiveConfig(c echo.Context) error {
 
 	Loading = false
 
-	return c.JSON(http.StatusOK, dto.MessageResponse{
+	return dto.MessageResponse{
 		Message: "Active config updated successfully",
-	})
+	}, nil
 }
 
 // For the user show the current config
@@ -109,7 +97,8 @@ type overall struct {
 	Active             config.ActiveConfig `json:"active"`
 }
 
-func getActiveConfig(c echo.Context) error {
+//encore:api public method=GET path=/active-config
+func getActiveConfig(ctx context.Context) (overall, error) {
 	var o overall
 	o.Active = config.Active
 	o.RiskValue = data.CalculateRisk()
@@ -142,56 +131,36 @@ func getActiveConfig(c echo.Context) error {
 		o.RiskValue = -1
 	}
 
-	return c.JSON(http.StatusOK, o)
+	return o, nil
 }
 
-// For the user show all the recommendations
-func getRecommendations(c echo.Context) error {
-	return c.JSON(http.StatusOK, config.Recs)
+type configRecommendation struct {
+	ConfRec []config.Recommendation `json:"recommendations"`
 }
 
-// For the user mark a recommendation as complete
-// Should update Z value and possibly create new recommendations
-// Passes in title of recommendation
-
-type CompleteRecommendationRequest struct {
-	Title string `json:"title"`
-}
-
-func toggleRecommendation(c echo.Context) error {
-	var req CompleteRecommendationRequest
-	if err := c.Bind(&req); err != nil {
-		return c.JSON(http.StatusBadRequest, dto.ErrorResponse{
-			Error: err.Error(),
-		})
-	}
-
-	for i, rec := range config.Recs {
-		if rec.Title == req.Title {
-			config.Recs[i].Completed = !config.Recs[i].Completed
-			return c.JSON(http.StatusOK, dto.MessageResponse{
-				Message: "Recommendation updated successfully",
-			})
+//encore:api public method=POST path=/recommendations
+func getRecommendations(ctx context.Context, category config.RecommendationTypes) (*configRecommendation, error) {
+	resp := gemini.GetRecommendation("Give me recommendation for this category", category)
+	recommendations := make([]config.Recommendation, len(resp))
+	fmt.Println("Recommendations: ", resp)
+	for i, r := range resp {
+		recommendations[i] = config.Recommendation{
+			Title:   r.Title,
+			Summary: r.Summary,
+			Details: r.Details,
+			Type:    category.Type,
+			Weight:  r.Weight,
 		}
 	}
-
-	return c.JSON(http.StatusBadRequest, dto.ErrorResponse{
-		Error: "Recommendation not found",
-	})
+	return &configRecommendation{ConfRec: recommendations}, nil
 }
 
-func timeSeriesBeauty(c echo.Context) error {
-	return nil
+type genAIcontent struct {
+	Msg string `json:"msg"`
 }
 
-func ChatCompletion(c echo.Context) error {
-	var req genai.Text
-	if err := c.Bind(&req); err != nil {
-		return c.JSON(http.StatusBadRequest, dto.ErrorResponse{
-			Error: err.Error(),
-		})
-	}
-
-	resp := gemini.Conversation(req)
-	return c.JSON(http.StatusOK, resp)
+//encore:api public method=POST path=/chat-completion
+func ChatCompletion(ctx context.Context, req genAIcontent) (genAIcontent, error) {
+	resp := gemini.Conversation(genai.Text(req.Msg))
+	return genAIcontent{Msg: string(resp)}, nil
 }

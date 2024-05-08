@@ -1,5 +1,5 @@
 CREATE TABLE companies (
-    id INTEGER PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     name TEXT NOT NULL,
     industry TEXT NOT NULL,
     city TEXT NOT NULL,

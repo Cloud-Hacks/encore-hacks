@@ -1,4 +1,4 @@
-package models
+package model
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 )
 
 type Company struct {
-	ID       int   `json:"id"`
+	ID       int    `json:"id"`
 	Name     string `json:"name"`
 	Industry string `json:"industry"`
 	City     string `json:"city"`
@@ -64,17 +64,35 @@ func AddCompanies(ctx context.Context, cmp *Company) error {
 	return err
 }
 
-func GetCompanies(ctx context.Context) (*Company, error) {
+func GetCompanies(ctx context.Context) (*[]Company, error) {
 	cmp := &Company{}
-	err := db.QueryRow(ctx,
-		`SELECT * FROM companies`,
-	).Scan(&cmp.ID, &cmp.Name, &cmp.Industry, &cmp.City, &cmp.CreatedAt, &cmp.UpdatedAt)
-	return cmp, err
+	rows, err := db.Query(ctx, `SELECT * FROM companies`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var companies []Company
+	for rows.Next() {
+		if err := rows.Scan(&cmp.ID, &cmp.Name, &cmp.Industry, &cmp.City, &cmp.CreatedAt, &cmp.UpdatedAt); err != nil {
+			return nil, err
+		}
+		companies = append(companies, *cmp)
+	}
+	return &companies, nil
+}
+
+type GetCompaniesResponse struct {
+	Companies []Company `json:"companies"`
 }
 
 //encore:api public method=GET path=/companies
-func GetCompaniesHandler(ctx context.Context) (*Company, error) {
-	return GetCompanies(ctx)
+func GetCompaniesHandler(ctx context.Context) (*GetCompaniesResponse, error) {
+	companies, err := GetCompanies(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &GetCompaniesResponse{Companies: *companies}, nil
 }
 
 //encore:api public method=POST path=/companies

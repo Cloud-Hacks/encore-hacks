@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"os"
 
 	"github.com/afzal442/encore-hacks/pkg/config"
 	"github.com/google/generative-ai-go/genai"
@@ -27,7 +26,7 @@ type ReccomendationResponseTwo struct {
 func GetRecommendation(msg string, category config.RecommendationTypes) []RecommendationResponse {
 	ctx := context.Background()
 	// Access your API key as an environment variable (see "Set up your API key" above)
-	client, err := genai.NewClient(ctx, option.WithAPIKey(os.Getenv("GENAI_API_KEY")))
+	client, err := genai.NewClient(ctx, option.WithAPIKey("AIzaSyBM221b9rNbUmpIOIKAOb9xhhyv0dGnMs0"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -46,13 +45,13 @@ func GetRecommendation(msg string, category config.RecommendationTypes) []Recomm
 		},
 		&genai.Content{
 			Parts: []genai.Part{
-				genai.Text("You are a recommendation assistant API that returns JSON ONLY. I am going to give you a company and you need to provide me a list of 2 recommendations related to %s to decrease overall risk for that company additionally you need to weight on a scale of 0-1 how critical that recommendation is with 1 being very critical, the weights should sum to 1. Return a list of JSON recommendations with the keys: 'title', 'summary', 'details', 'weight'. Return JSON only."),
+				genai.Text("You are a recommendation assistant API that returns JSON ONLY but don't print ```json. I am going to give you a company and you need to provide me a list of 2 recommendations related to %s to decrease overall risk for that company additionally you need to weight on a scale of 0-1 how critical that recommendation is with 1 being very critical, the weights should sum to 1. Return a list of JSON recommendations with the keys: 'title', 'summary', 'details', 'weight'. Return JSON only but omitting '```json'."),
 			},
 			Role: "model",
 		},
 	}
 
-	resp, err := cs.SendMessage(ctx, genai.Text(msg))
+	resp, err := cs.SendMessage(ctx, genai.Text(msg + fmt.Sprintf(" Category: %s", category)))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -82,7 +81,7 @@ type BaselineRiskResponse struct {
 func GetBaselineRisk(age uint, industry string) BaselineRiskResponse {
 	ctx := context.Background()
 	// Access your API key as an environment variable (see "Set up your API key" above)
-	client, err := genai.NewClient(ctx, option.WithAPIKey(os.Getenv("GENAI_API_KEY")))
+	client, err := genai.NewClient(ctx, option.WithAPIKey("AIzaSyBM221b9rNbUmpIOIKAOb9xhhyv0dGnMs0"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -145,7 +144,7 @@ type RiskResponseThree struct {
 func GetRiskWeights(age uint, industry string) []RiskResponse {
 	ctx := context.Background()
 	// Access your API key as an environment variable (see "Set up your API key" above)
-	client, err := genai.NewClient(ctx, option.WithAPIKey(os.Getenv("GENAI_API_KEY")))
+	client, err := genai.NewClient(ctx, option.WithAPIKey("AIzaSyBM221b9rNbUmpIOIKAOb9xhhyv0dGnMs0"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -172,7 +171,7 @@ func GetRiskWeights(age uint, industry string) []RiskResponse {
 	}
 	riskFactors := ""
 	for _, factor := range config.RecTypes {
-		riskFactors += string(factor) + ", "
+		riskFactors += factor.Type + ", "
 	}
 	resp, err := cs.SendMessage(ctx, genai.Text(fmt.Sprintf("Age: %d, Industry: %s, Risk Factors: Safety, Security Measures, Accident History, Employee Training, Legal", age, industry)))
 
@@ -255,32 +254,8 @@ func GetRiskWeights(age uint, industry string) []RiskResponse {
 	return riskWeights
 }
 
-/* func Conversation(pastMessages []openai.ChatCompletionMessage) []openai.ChatCompletionMessage {
-	client := openai.NewClient(os.Getenv("CHATGPT_API_KEY"))
-
-	resp, err := client.CreateChatCompletion(
-		context.Background(),
-		openai.ChatCompletionRequest{
-			Model: openai.GPT3Dot5Turbo,
-			Messages: append([]openai.ChatCompletionMessage{
-				{
-					Role:    openai.ChatMessageRoleSystem,
-					Content: "You are a Insurance Agent at State Farm here to help answer questions and provide guidance to your clients.",
-				},
-			}, pastMessages...),
-		},
-	)
-
-	if err != nil {
-		fmt.Printf("ChatCompletion error: %v\n", err)
-		return nil
-	}
-
-	return append(pastMessages, resp.Choices[0].Message)
-} */
-
 func Conversation(pastMessages genai.Text) genai.Text {
-	client, err := genai.NewClient(context.Background(), option.WithAPIKey(os.Getenv("GENAI_API_KEY")))
+	client, err := genai.NewClient(context.Background(), option.WithAPIKey("AIzaSyBM221b9rNbUmpIOIKAOb9xhhyv0dGnMs0"))
 	if err != nil {
 		log.Fatal(err)
 	}
