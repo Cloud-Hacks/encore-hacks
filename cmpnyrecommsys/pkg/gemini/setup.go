@@ -91,8 +91,15 @@ func GetBaselineRisk(age uint, industry string) BaselineRiskResponse {
 	model := client.GenerativeModel("gemini-pro")
 	// Initialize the chat
 	cs := model.StartChat()
-	resp, err := cs.SendMessage(ctx, genai.Text("You are a risk assessor assistant API that returns JSON ONLY. I am going to give you a company's age and industry and you need to provide me a float baseline risk factor on a 0.1 - 1.9 scale with 2 being the riskiest. Return a JSON with the key: 'baseline_risk'. Return JSON only."),
-		genai.Text(fmt.Sprintf("Age: %d, Industry: %s", age, industry)))
+	cs.History = []*genai.Content{
+		&genai.Content{
+			Parts: []genai.Part{
+				genai.Text("You are a risk assessor assistant API that returns JSON ONLY. I am going to give you a company's age and industry and you need to provide me a float baseline risk factor on a 0.1 - 1.9 scale with 2 being the riskiest. Return a JSON with the key: 'baseline_risk'. Return JSON only."),
+			},
+			Role: "model",
+		},
+	}
+	resp, err := cs.SendMessage(ctx, genai.Text(fmt.Sprintf("Age: %d, Industry: %s", age, industry)))
 	if err != nil {
 		fmt.Printf("ChatCompletion error: %v\n", err)
 		return BaselineRiskResponse{
@@ -128,32 +135,34 @@ type RiskResponseThree struct {
 	RiskWeights []RiskResponse `json:"risk_factors"`
 }
 
-/* func GetRiskWeights(age uint, industry string) []RiskResponse {
-	client := openai.NewClient(os.Getenv("CHATGPT_API_KEY"))
+func GetRiskWeights(age uint, industry string) []RiskResponse {
+	ctx := context.Background()
+	// Access your API key as an environment variable (see "Set up your API key" above)
+	client, err := genai.NewClient(ctx, option.WithAPIKey("AIzaSyBM221b9rNbUmpIOIKAOb9xhhyv0dGnMs0"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer client.Close()
 
+	// For text-only input, use the gemini-pro model
+	model := client.GenerativeModel("gemini-pro")
+	// Initialize the chat
+	cs := model.StartChat()
+
+	cs.History = []*genai.Content{
+		&genai.Content{
+			Parts: []genai.Part{
+				genai.Text("You are a risk assessor assistant API that returns JSON ONLY. I am going to give you a company's age, industry and risk factors and you need to provide me the weights for the risk factors that will help me combine it into a single risk metric. The risk weights should sum to 1.0. Return a JSON list of objects with the keys: 'risk_factor' and 'risk_weight'. Finance should always be rated at 0.5. Return JSON only."),
+			},
+			Role: "model",
+		},
+	}
 	riskFactors := ""
 	for _, factor := range config.RecTypes {
 		riskFactors += string(factor) + ", "
 	}
-	resp, err := client.CreateChatCompletion(
-		context.Background(),
-		openai.ChatCompletionRequest{
-			Model: openai.GPT3Dot5Turbo,
-			Messages: []openai.ChatCompletionMessage{
-				{
-					Role:    openai.ChatMessageRoleSystem,
-					Content: "You are a risk assessor assistant API that returns JSON ONLY. I am going to give you a company's age, industry and risk factors and you need to provide me the weights for the risk factors that will help me combine it into a single risk metric. The risk weights should sum to 1.0. Return a JSON list of objects with the keys: 'risk_factor' and 'risk_weight'. Finance should always be rated at 0.5. Return JSON only.",
-				},
-				{
-					Role:    openai.ChatMessageRoleUser,
-					Content: fmt.Sprintf("Age: %d, Industry: %s, Risk Factors:%s", age, industry, riskFactors),
-				},
-			},
-		},
-	)
-
-	var riskWeights []RiskResponse
-
+	resp, err := cs.SendMessage(ctx, genai.Text(fmt.Sprintf("Age: %d, Industry: %s, Risk Factors: Safety, Security Measures, Accident History, Employee Training, Legal", age, industry)))
+	
 	if err != nil {
 		fmt.Printf("ChatCompletion error: %v\n", err)
 		return []RiskResponse{
@@ -184,7 +193,8 @@ type RiskResponseThree struct {
 		}
 	}
 
-	response := resp.Choices[0].Message.Content
+	var riskWeights []RiskResponse
+	response := resp.Candidates[0].Content.Parts[0].(genai.Text)
 	err = json.Unmarshal([]byte(response), &riskWeights)
 	if err != nil {
 		fmt.Println("Weight ChatCompletion error: Failing back to method 2")
@@ -230,7 +240,7 @@ type RiskResponseThree struct {
 	}
 
 	return riskWeights
-} */
+}
 
 /* func Conversation(pastMessages []openai.ChatCompletionMessage) []openai.ChatCompletionMessage {
 	client := openai.NewClient(os.Getenv("CHATGPT_API_KEY"))
