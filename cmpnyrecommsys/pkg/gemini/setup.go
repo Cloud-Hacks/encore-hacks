@@ -26,7 +26,7 @@ type ReccomendationResponseTwo struct {
 func GetRecommendation(msg string, category config.RecommendationTypes) []RecommendationResponse {
 	ctx := context.Background()
 	// Access your API key as an environment variable (see "Set up your API key" above)
-	client, err := genai.NewClient(ctx, option.WithAPIKey("AIzaSyBM221b9rNbUmpIOIKAOb9xhhyv0dGnMs0"))
+	client, err := genai.NewClient(ctx, option.WithAPIKey("GEMINI_API_KEY"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -81,7 +81,7 @@ type BaselineRiskResponse struct {
 func GetBaselineRisk(age uint, industry string) BaselineRiskResponse {
 	ctx := context.Background()
 	// Access your API key as an environment variable (see "Set up your API key" above)
-	client, err := genai.NewClient(ctx, option.WithAPIKey("AIzaSyBM221b9rNbUmpIOIKAOb9xhhyv0dGnMs0"))
+	client, err := genai.NewClient(ctx, option.WithAPIKey("GEMINI_API_KEY"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -144,7 +144,7 @@ type RiskResponseThree struct {
 func GetRiskWeights(age uint, industry string) []RiskResponse {
 	ctx := context.Background()
 	// Access your API key as an environment variable (see "Set up your API key" above)
-	client, err := genai.NewClient(ctx, option.WithAPIKey("AIzaSyBM221b9rNbUmpIOIKAOb9xhhyv0dGnMs0"))
+	client, err := genai.NewClient(ctx, option.WithAPIKey("GEMINI_API_KEY"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -255,7 +255,7 @@ func GetRiskWeights(age uint, industry string) []RiskResponse {
 }
 
 func Conversation(pastMessages genai.Text) genai.Text {
-	client, err := genai.NewClient(context.Background(), option.WithAPIKey("AIzaSyBM221b9rNbUmpIOIKAOb9xhhyv0dGnMs0"))
+	client, err := genai.NewClient(context.Background(), option.WithAPIKey("GEMINI_API_KEY"))
 	if err != nil {
 		log.Fatal(err)
 	}
