@@ -4,14 +4,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/afzal442/encore-hacks/pkg/echo"
-	"github.com/afzal442/encore-hacks/v1/ipad"
-	"github.com/joho/godotenv"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"time"
+
+	"github.com/afzal442/encore-hacks/pkg/database"
+	"github.com/afzal442/encore-hacks/pkg/echo"
+	"github.com/afzal442/encore-hacks/v1/ipad"
+	"github.com/joho/godotenv"
 )
 
 func main() {
@@ -20,7 +22,7 @@ func main() {
 		log.Fatalf("Error loading .env file.")
 	}
 
-	//database.ConnectDatabase(database.Config())
+	database.ConnectDatabase(database.Config())
 
 	e := echo.Engine()
 
