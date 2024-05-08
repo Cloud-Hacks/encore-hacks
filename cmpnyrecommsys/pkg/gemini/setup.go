@@ -45,7 +45,7 @@ func GetRecommendation(msg string, category config.RecommendationTypes) []Recomm
 		},
 		&genai.Content{
 			Parts: []genai.Part{
-				genai.Text("You are a recommendation assistant API that returns JSON ONLY but don't print ```json. I am going to give you a company and you need to provide me a list of 2 recommendations related to %s to decrease overall risk for that company additionally you need to weight on a scale of 0-1 how critical that recommendation is with 1 being very critical, the weights should sum to 1. Return a list of JSON recommendations with the keys: 'title', 'summary', 'details', 'weight'. Return JSON only but omitting '```json'."),
+				genai.Text("You are a recommendation assistant API. I am going to give you a company's message and category and you need to provide me a list of recommendations. Return a list of objects with the keys: 'title', 'summary', 'details', 'category', and 'weight' like\n\n[\n{\"title\": \"LegalAdvice.com\",\n    \"summary\": \"Get personalized and affordable legal advice from licensed attorneys.\",\n    \"details\": \"With LegalAdvice.com, you can get affordable and personalized legal advice from licensed attorneys. Get help with common legal issues like family law, criminal defense, wills and trusts, and more. LegalAdvice.com offers a variety of packages to fit your budget, and you can be confident that you're getting high-quality legal advice from a qualified attorney.\",\n     */\"category\": \"Legal\",\n    \"weight\": 0.9,\n}] should not contain an extra opening and closing bracket [[ ]] also any  */ as well as invalid character ']' after object key:value pair"),
 			},
 			Role: "model",
 		},
@@ -57,7 +57,7 @@ func GetRecommendation(msg string, category config.RecommendationTypes) []Recomm
 	}
 	// fmt.Println(resp.Candidates[0].Content.Parts)
 
-	response := resp.Candidates[0].Content.Parts
+	response := resp.Candidates[0].Content.Parts[0]
 	var recommendations []RecommendationResponse
 	err = json.Unmarshal([]byte(fmt.Sprint(response)), &recommendations)
 	if err != nil {

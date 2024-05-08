@@ -142,7 +142,6 @@ type configRecommendation struct {
 func getRecommendations(ctx context.Context, category config.RecommendationTypes) (*configRecommendation, error) {
 	resp := gemini.GetRecommendation("Give me recommendation for this category", category)
 	recommendations := make([]config.Recommendation, len(resp))
-	fmt.Println("Recommendations: ", resp)
 	for i, r := range resp {
 		recommendations[i] = config.Recommendation{
 			Title:   r.Title,
