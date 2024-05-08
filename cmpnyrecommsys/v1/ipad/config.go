@@ -185,7 +185,7 @@ func timeSeriesBeauty(c echo.Context) error {
 }
 
 func ChatCompletion(c echo.Context) error {
-	var req []genai.Text
+	var req genai.Text
 	if err := c.Bind(&req); err != nil {
 		return c.JSON(http.StatusBadRequest, dto.ErrorResponse{
 			Error: err.Error(),

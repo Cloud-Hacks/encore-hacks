@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/afzal442/encore-hacks/pkg/config"
 	"github.com/google/generative-ai-go/genai"
@@ -26,7 +27,7 @@ type ReccomendationResponseTwo struct {
 func GetRecommendation(msg string, category config.RecommendationTypes) []RecommendationResponse {
 	ctx := context.Background()
 	// Access your API key as an environment variable (see "Set up your API key" above)
-	client, err := genai.NewClient(ctx, option.WithAPIKey("AIzaSyBM221b9rNbUmpIOIKAOb9xhhyv0dGnMs0"))
+	client, err := genai.NewClient(ctx, option.WithAPIKey(os.Getenv("GENAI_API_KEY")))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -81,7 +82,7 @@ type BaselineRiskResponse struct {
 func GetBaselineRisk(age uint, industry string) BaselineRiskResponse {
 	ctx := context.Background()
 	// Access your API key as an environment variable (see "Set up your API key" above)
-	client, err := genai.NewClient(ctx, option.WithAPIKey("AIzaSyBM221b9rNbUmpIOIKAOb9xhhyv0dGnMs0"))
+	client, err := genai.NewClient(ctx, option.WithAPIKey(os.Getenv("GENAI_API_KEY")))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -92,6 +93,12 @@ func GetBaselineRisk(age uint, industry string) BaselineRiskResponse {
 	// Initialize the chat
 	cs := model.StartChat()
 	cs.History = []*genai.Content{
+		&genai.Content{
+			Parts: []genai.Part{
+				genai.Text("Hello, I am interested in risk factors for a company."),
+			},
+			Role: "user",
+		},
 		&genai.Content{
 			Parts: []genai.Part{
 				genai.Text("You are a risk assessor assistant API that returns JSON ONLY. I am going to give you a company's age and industry and you need to provide me a float baseline risk factor on a 0.1 - 1.9 scale with 2 being the riskiest. Return a JSON with the key: 'baseline_risk'. Return JSON only."),
@@ -138,7 +145,7 @@ type RiskResponseThree struct {
 func GetRiskWeights(age uint, industry string) []RiskResponse {
 	ctx := context.Background()
 	// Access your API key as an environment variable (see "Set up your API key" above)
-	client, err := genai.NewClient(ctx, option.WithAPIKey("AIzaSyBM221b9rNbUmpIOIKAOb9xhhyv0dGnMs0"))
+	client, err := genai.NewClient(ctx, option.WithAPIKey(os.Getenv("GENAI_API_KEY")))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -152,6 +159,12 @@ func GetRiskWeights(age uint, industry string) []RiskResponse {
 	cs.History = []*genai.Content{
 		&genai.Content{
 			Parts: []genai.Part{
+				genai.Text("Hello, I am interested in risk factors for a company."),
+			},
+			Role: "user",
+		},
+		&genai.Content{
+			Parts: []genai.Part{
 				genai.Text("You are a risk assessor assistant API that returns JSON ONLY. I am going to give you a company's age, industry and risk factors and you need to provide me the weights for the risk factors that will help me combine it into a single risk metric. The risk weights should sum to 1.0. Return a JSON list of objects with the keys: 'risk_factor' and 'risk_weight'. Finance should always be rated at 0.5. Return JSON only."),
 			},
 			Role: "model",
@@ -162,7 +175,7 @@ func GetRiskWeights(age uint, industry string) []RiskResponse {
 		riskFactors += string(factor) + ", "
 	}
 	resp, err := cs.SendMessage(ctx, genai.Text(fmt.Sprintf("Age: %d, Industry: %s, Risk Factors: Safety, Security Measures, Accident History, Employee Training, Legal", age, industry)))
-	
+
 	if err != nil {
 		fmt.Printf("ChatCompletion error: %v\n", err)
 		return []RiskResponse{
@@ -266,8 +279,8 @@ func GetRiskWeights(age uint, industry string) []RiskResponse {
 	return append(pastMessages, resp.Choices[0].Message)
 } */
 
-func Conversation(pastMessages []genai.Text) genai.Text {
-	client, err := genai.NewClient(context.Background(), option.WithAPIKey("AIzaSyBM221b9rNbUmpIOIKAOb9xhhyv0dGnMs0"))
+func Conversation(pastMessages genai.Text) genai.Text {
+	client, err := genai.NewClient(context.Background(), option.WithAPIKey(os.Getenv("GENAI_API_KEY")))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -277,9 +290,22 @@ func Conversation(pastMessages []genai.Text) genai.Text {
 	model := client.GenerativeModel("gemini-pro")
 	// Initialize the chat
 	cs := model.StartChat()
-	resp, err := cs.SendMessage(context.Background(), genai.Text("You are a Insurance Agent at State Farm here to help answer questions and provide guidance to your clients."),
-		pastMessages[0])
+	cs.History = []*genai.Content{
+		&genai.Content{
+			Parts: []genai.Part{
+				pastMessages,
+			},
+			Role: "user",
+		},
+		&genai.Content{
+			Parts: []genai.Part{
+				genai.Text("You are a Insurance Agent at State Farm here to help answer questions and provide guidance to your clients."),
+			},
+			Role: "model",
+		},
+	}
 
+	resp, err := cs.SendMessage(context.Background(), genai.Text("Plz help me with the risk factors for a company."))
 	if err != nil {
 		fmt.Printf("ChatCompletion error: %v\n", err)
 		return genai.Text("I'm sorry, I don't have an answer for that.")
